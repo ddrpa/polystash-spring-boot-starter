@@ -129,40 +129,39 @@ public class FileSystemBlobStore extends BlobStore {
             throw new OperationNotSupportedException(String.format(
                     "List operation failed: path '%s' is not a directory, cannot list objects. Base directory: '%s'", prefix, this.baseDir));
         }
+
         // walk through the directory and return an iterable object
-        Stream<Path> filesWalkStream;
-        try {
-            if (listOptions.recursive()) {
-                filesWalkStream = Files.walk(targetPath, Integer.MAX_VALUE)
-                        .filter(Files::isRegularFile);
-            } else {
-                filesWalkStream = Files.walk(targetPath, 1).filter(Files::isRegularFile);
-            }
+        try (Stream<Path> filesWalkStream = listOptions.recursive()
+                ? Files.walk(targetPath, Integer.MAX_VALUE).filter(Files::isRegularFile)
+                : Files.walk(targetPath, 1).filter(Files::isRegularFile)) {
+
+            var fileList = filesWalkStream.toList();
+
+            return () -> new Iterator<>() {
+                private final Iterator<Path> fileIterator = fileList.iterator();
+
+                @Override
+                public boolean hasNext() {
+                    return fileIterator.hasNext();
+                }
+
+                @Override
+                public BlobResult next() {
+                    Path filePath = fileIterator.next();
+                    String objectName = directoryPattern.matcher(
+                                    filePath.toString().replace(baseDirAsString, StringPool.EMPTY))
+                            .replaceFirst(StringPool.EMPTY);
+                    Blob blob = get(filePath, false)
+                            .setObjectName(objectName);
+                    return new BlobResult(blob);
+                }
+            };
         } catch (IOException e) {
             throw new IOErrorOccursException(
                     String.format("IO error occurred while walking through directory '%s' at path '%s'. Recursive: %s",
                             prefix, targetPath, listOptions.recursive()),
                     e);
         }
-        return () -> new Iterator<>() {
-            private final Iterator<Path> fileIterator = filesWalkStream.iterator();
-
-            @Override
-            public boolean hasNext() {
-                return fileIterator.hasNext();
-            }
-
-            @Override
-            public BlobResult next() {
-                Path filePath = fileIterator.next();
-                String objectName = directoryPattern.matcher(
-                                filePath.toString().replace(baseDirAsString, StringPool.EMPTY))
-                        .replaceFirst(StringPool.EMPTY);
-                Blob blob = get(filePath, false)
-                        .setObjectName(objectName);
-                return new BlobResult(blob);
-            }
-        };
     }
 
     @Override
