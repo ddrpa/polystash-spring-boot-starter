@@ -1,0 +1,125 @@
+{
+  "properties": [
+    {
+      "name": "polystash.primary",
+      "type": "java.lang.String",
+      "description": "主 BlobStore 实例的名称。如果未指定，将使用第一个配置的 BlobStore 作为主实例。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.PolyStashProperties"
+    },
+    {
+      "name": "polystash.blobstore",
+      "type": "java.util.Map<java.lang.String,cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties>",
+      "description": "BlobStore 配置映射，key 为 BlobStore 名称，value 为配置属性。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.PolyStashProperties"
+    },
+    {
+      "name": "polystash.blobstore.*.qualifier",
+      "type": "java.lang.String",
+      "description": "BlobStore 限定符，用于在依赖注入时区分不同的 BlobStore 实例。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties"
+    },
+    {
+      "name": "polystash.blobstore.*.endpoint",
+      "type": "java.lang.String",
+      "description": "存储服务端点 URL。对于 S3 兼容存储：https://minio.example.com:9000，对于 AWS S3：https://s3.amazonaws.com。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties"
+    },
+    {
+      "name": "polystash.blobstore.*.region",
+      "type": "java.lang.String",
+      "description": "存储服务区域。对于 S3 兼容存储和 AWS S3 都需要指定。",
+      "defaultValue": "us-east-1",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties"
+    },
+    {
+      "name": "polystash.blobstore.*.accessKey",
+      "type": "java.lang.String",
+      "description": "访问密钥 ID，与 secretKey 配合使用进行身份验证。如果使用 credentials 文件，则不需要此字段。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties"
+    },
+    {
+      "name": "polystash.blobstore.*.secretKey",
+      "type": "java.lang.String",
+      "description": "访问密钥，与 accessKey 配合使用进行身份验证。如果使用 credentials 文件，则不需要此字段。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties"
+    },
+    {
+      "name": "polystash.blobstore.*.credentials",
+      "type": "java.lang.String",
+      "description": "凭证文件路径，JSON 格式的凭证文件路径。如果提供此字段，则不需要 accessKey 和 secretKey。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties"
+    },
+    {
+      "name": "polystash.blobstore.*.bucket",
+      "type": "java.lang.String",
+      "description": "存储桶名称，S3 兼容存储和 AWS S3 的必需字段。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties"
+    },
+    {
+      "name": "polystash.blobstore.*.baseDir",
+      "type": "java.lang.String",
+      "description": "基础目录路径，文件系统存储的必需字段，指定文件存储的根目录。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties"
+    },
+    {
+      "name": "polystash.blobstore.*.builder",
+      "type": "java.lang.String",
+      "description": "BlobStore 构建器类型。支持的值：'fs'（文件系统存储）、's3'（S3 兼容存储）、自定义实现类的全限定名。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties"
+    },
+    {
+      "name": "polystash.blobstore.*.extra",
+      "type": "java.util.Map<java.lang.String,java.lang.String>",
+      "description": "允许添加额外的配置供自定义实现访问，用于扩展配置，支持特定存储类型的额外参数。",
+      "sourceType": "cc.ddrpa.dorian.polystash.springboot.autoconfigure.FullBlobStoreProperties"
+    }
+  ],
+  "hints": [
+    {
+      "name": "polystash.blobstore.*.builder",
+      "values": [
+        {
+          "value": "fs",
+          "description": "文件系统存储，适用于本地文件存储"
+        },
+        {
+          "value": "s3",
+          "description": "S3 兼容存储，适用于 MinIO、AWS S3 等对象存储服务"
+        }
+      ],
+      "providers": [
+        {
+          "name": "class-reference",
+          "parameters": {
+            "target": "cc.ddrpa.dorian.polystash.core.blobstore.BlobStoreBuilder"
+          }
+        }
+      ]
+    },
+    {
+      "name": "polystash.blobstore.*.region",
+      "values": [
+        {
+          "value": "us-east-1",
+          "description": "美国东部（弗吉尼亚北部）"
+        },
+        {
+          "value": "us-west-2",
+          "description": "美国西部（俄勒冈）"
+        },
+        {
+          "value": "eu-west-1",
+          "description": "欧洲（爱尔兰）"
+        },
+        {
+          "value": "ap-southeast-1",
+          "description": "亚太地区（新加坡）"
+        },
+        {
+          "value": "cn-north-1",
+          "description": "中国（北京）"
+        }
+      ]
+    }
+  ]
+}
