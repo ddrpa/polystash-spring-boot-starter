@@ -29,22 +29,22 @@ public class XATTRHandler implements IAttributeHandler {
     }
 
     @Override
-    public Map<String, String> metadataAttributes(Path filePath) {
+    public Map<String, String> readMetadataAttributes(Path filePath) {
         return getAttributes(filePath, METADATA_ATTRIBUTE_PREFIX);
     }
 
     @Override
-    public void metadataAttributes(Path filePath, Map<String, String> metadata) {
+    public void writeMetadataAttributes(Path filePath, Map<String, String> metadata) {
         setAttributes(filePath, METADATA_ATTRIBUTE_PREFIX, metadata);
     }
 
     @Override
-    public void userDefinedAttributes(Path filePath, Map<String, String> userDefinedAttributes) {
+    public void writeUserDefinedAttributes(Path filePath, Map<String, String> userDefinedAttributes) {
         setAttributes(filePath, USER_DEFINED_ATTRIBUTE_PREFIX, userDefinedAttributes);
     }
 
     @Override
-    public Map<String, String> userDefinedAttributes(Path filePath) {
+    public Map<String, String> readUserDefinedAttributes(Path filePath) {
         return getAttributes(filePath, USER_DEFINED_ATTRIBUTE_PREFIX);
     }
 

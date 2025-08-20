@@ -32,22 +32,22 @@ public class UserDefinedFileAttributeViewHandler implements IAttributeHandler {
     }
 
     @Override
-    public void metadataAttributes(Path filePath, Map<String, String> metadata) {
+    public void writeMetadataAttributes(Path filePath, Map<String, String> metadata) {
         setAttributes(filePath, METADATA_ATTRIBUTE_PREFIX, metadata);
     }
 
     @Override
-    public Map<String, String> metadataAttributes(Path filePath) {
+    public Map<String, String> readMetadataAttributes(Path filePath) {
         return getAttributes(filePath, METADATA_ATTRIBUTE_PREFIX);
     }
 
     @Override
-    public void userDefinedAttributes(Path filePath, Map<String, String> attributes) {
+    public void writeUserDefinedAttributes(Path filePath, Map<String, String> attributes) {
         setAttributes(filePath, USER_DEFINED_ATTRIBUTE_PREFIX, attributes);
     }
 
     @Override
-    public Map<String, String> userDefinedAttributes(Path filePath) {
+    public Map<String, String> readUserDefinedAttributes(Path filePath) {
         return getAttributes(filePath, USER_DEFINED_ATTRIBUTE_PREFIX);
     }
 

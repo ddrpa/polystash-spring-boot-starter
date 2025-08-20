@@ -17,9 +17,9 @@ abstract class AbstractAttributeHandlerTests {
 
     @Test
     void writeAndReadAttributeTest() {
-        getAttributeHandler().userDefinedAttributes(Path.of("Awa-Subaru.png"),
+        getAttributeHandler().writeUserDefinedAttributes(Path.of("Awa-Subaru.png"),
                 Map.of("last-m", "2024-12-31 11:10:00"));
-        Map<String, String> userDefined = getAttributeHandler().userDefinedAttributes(Path.of("Awa-Subaru.png"));
+        Map<String, String> userDefined = getAttributeHandler().readUserDefinedAttributes(Path.of("Awa-Subaru.png"));
         assertEquals("2024-12-31 11:10:00", userDefined.get("last-m"));
     }
 }

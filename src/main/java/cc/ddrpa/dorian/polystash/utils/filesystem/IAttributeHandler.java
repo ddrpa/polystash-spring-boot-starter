@@ -1,5 +1,7 @@
 package cc.ddrpa.dorian.polystash.utils.filesystem;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -23,49 +25,64 @@ public interface IAttributeHandler {
      * <p>
      * 所有用户自定义属性都以此外缀开头，用于区分系统属性和用户属性。
      */
-    String USER_DEFINED_ATTRIBUTE_PREFIX = "polystash.user.";
+    String USER_DEFINED_ATTRIBUTE_PREFIX = "forvariz.user.";
 
     /**
      * 元数据属性的前缀标识符。
      * <p>
      * 所有系统元数据属性都以此外缀开头，用于区分用户属性和系统属性。
      */
-    String METADATA_ATTRIBUTE_PREFIX = "polystash.meta.";
+    String METADATA_ATTRIBUTE_PREFIX = "forvariz.meta.";
 
     /**
-     * ETag 属性名称。
-     * <p>
-     * 用于存储文件的 ETag 值，用于缓存验证和并发控制。
+     * 文件的 ETag 值，用于缓存验证和并发控制
      */
     String ATTR_ETAG = "etag";
 
     /**
-     * 内容类型属性名称。
-     * <p>
-     * 用于存储文件的 MIME 类型信息。
+     * 文件的 MIME 类型信息。
      */
     String ATTR_CONTENT_TYPE = "content-type";
 
     /**
-     * 可读文件名属性名称。
-     * <p>
-     * 用于存储人类可读的文件名，通常与系统生成的文件名不同。
+     * 可读文件名
      */
     String ATTR_READABLE_FILENAME = "readable-filename";
+    String ATTR_LEGACY_READABLE_FILENAME = "original-filename"; // 兼容旧版本
 
     /**
-     * 校验和属性名称。
-     * <p>
-     * 用于存储文件的校验和值，用于数据完整性验证。
+     * 存储文件的校验和值，用于数据完整性验证
      */
     String ATTR_CHECKSUM = "checksum";
-
     /**
-     * 校验和算法属性名称。
-     * <p>
-     * 用于存储计算校验和时使用的算法标识符。
+     * 计算校验和时使用的算法
      */
     String ATTR_CHECKSUM_ALGORITHM = "checksum-algorithm";
+
+    static Optional<String> parseETag(Map<String, String> metadata) {
+        return Optional.ofNullable(metadata.get(ATTR_ETAG));
+    }
+
+    static Optional<String> parseContentType(Map<String, String> metadata) {
+        return Optional.ofNullable(metadata.get(ATTR_CONTENT_TYPE));
+    }
+
+    static Optional<String> parseReadableFilename(Map<String, String> metadata) {
+        String nullableReadableFilename = metadata.get(ATTR_READABLE_FILENAME);
+        if (StringUtils.isBlank(nullableReadableFilename)) {
+            return Optional.ofNullable(metadata.get(ATTR_LEGACY_READABLE_FILENAME));
+        } else {
+            return Optional.of(nullableReadableFilename);
+        }
+    }
+
+    static Optional<String> parseChecksum(Map<String, String> metadata) {
+        return Optional.ofNullable(metadata.get(ATTR_CHECKSUM));
+    }
+
+    static Optional<String> parseChecksumAlgorithm(Map<String, String> metadata) {
+        return Optional.ofNullable(metadata.get(ATTR_CHECKSUM_ALGORITHM));
+    }
 
     /**
      * 读取文件的元数据属性。
@@ -76,7 +93,7 @@ public interface IAttributeHandler {
      * @param filePath 要读取元数据的文件路径
      * @return 包含元数据键值对的映射，如果没有元数据则返回空映射
      */
-    Map<String, String> metadataAttributes(Path filePath);
+    Map<String, String> readMetadataAttributes(Path filePath);
 
     /**
      * 设置文件的元数据属性。
@@ -87,7 +104,7 @@ public interface IAttributeHandler {
      * @param filePath 要设置元数据的文件路径
      * @param metadata 要设置的元数据键值对映射
      */
-    void metadataAttributes(Path filePath, Map<String, String> metadata);
+    void writeMetadataAttributes(Path filePath, Map<String, String> metadata);
 
     /**
      * 设置文件的用户自定义属性。
@@ -98,7 +115,7 @@ public interface IAttributeHandler {
      * @param filePath              要设置用户自定义属性的文件路径
      * @param userDefinedAttributes 要设置的用户自定义属性键值对映射
      */
-    void userDefinedAttributes(Path filePath, Map<String, String> userDefinedAttributes);
+    void writeUserDefinedAttributes(Path filePath, Map<String, String> userDefinedAttributes);
 
     /**
      * 读取文件的用户自定义属性。
@@ -109,7 +126,7 @@ public interface IAttributeHandler {
      * @param filePath 要读取用户自定义属性的文件路径
      * @return 包含用户自定义属性键值对的映射，如果没有属性则返回空映射
      */
-    Map<String, String> userDefinedAttributes(Path filePath);
+    Map<String, String> readUserDefinedAttributes(Path filePath);
 
     /**
      * 读取文件的原始属性值。

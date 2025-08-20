@@ -204,7 +204,7 @@ public class FileSystemBlobStore extends BlobStore {
                 .setChecksumAlgorithm(SupportedChecksumAlgorithm.ALG_XXHASH_64);
         if (!userDefinedAttributes.isEmpty()) {
             // 如果有用户自定义属性，写入到文件属性中
-            attributeHandler.userDefinedAttributes(targetFilePath, userDefinedAttributes);
+            attributeHandler.writeUserDefinedAttributes(targetFilePath, userDefinedAttributes);
         }
         // 写入 metadata
         Map<String, String> metadataAttributes = new HashMap<>();
@@ -213,7 +213,7 @@ public class FileSystemBlobStore extends BlobStore {
         metadataAttributes.put(IAttributeHandler.ATTR_CHECKSUM_ALGORITHM, SupportedChecksumAlgorithm.ALG_XXHASH_64);
         metadataAttributes.put(IAttributeHandler.ATTR_READABLE_FILENAME, readableName);
         metadataAttributes.put(IAttributeHandler.ATTR_CONTENT_TYPE, contentType);
-        attributeHandler.metadataAttributes(targetFilePath, metadataAttributes);
+        attributeHandler.writeMetadataAttributes(targetFilePath, metadataAttributes);
         return blob;
     }
 
@@ -266,18 +266,18 @@ public class FileSystemBlobStore extends BlobStore {
     }
 
     private Blob get(Path filePath, boolean acquirePayload) {
-        Map<String, String> metadata = attributeHandler.metadataAttributes(filePath);
-        Map<String, String> userDefinedAttributes = attributeHandler.userDefinedAttributes(filePath);
+        Map<String, String> metadata = attributeHandler.readMetadataAttributes(filePath);
+        Map<String, String> userDefinedAttributes = attributeHandler.readUserDefinedAttributes(filePath);
         File file = filePath.toFile();
         Blob blob = new Blob()
                 .setRepeatable(true)
-                .setETag(metadata.getOrDefault(IAttributeHandler.ATTR_ETAG, null))
                 .setLastModified(Instant.ofEpochSecond(file.lastModified()))
                 .setLength(file.length())
-                .setReadableName(metadata.getOrDefault(IAttributeHandler.ATTR_READABLE_FILENAME, null))
-                .setContentType(metadata.getOrDefault(IAttributeHandler.ATTR_CONTENT_TYPE, null))
-                .setChecksum(metadata.getOrDefault(IAttributeHandler.ATTR_CHECKSUM, null))
-                .setChecksumAlgorithm(metadata.getOrDefault(IAttributeHandler.ATTR_CHECKSUM_ALGORITHM, null))
+                .setETag(IAttributeHandler.parseETag(metadata).orElse(null))
+                .setReadableName(IAttributeHandler.parseReadableFilename(metadata).orElse(null))
+                .setContentType(IAttributeHandler.parseContentType(metadata).orElse(null))
+                .setChecksum(IAttributeHandler.parseChecksum(metadata).orElse(null))
+                .setChecksumAlgorithm(IAttributeHandler.parseChecksumAlgorithm(metadata).orElse(null))
                 .setUserDefinedAttributes(userDefinedAttributes);
         if (acquirePayload) {
             blob.setPayload(new FilePayload(file));

@@ -15,21 +15,22 @@ public class NOPHandler implements IAttributeHandler {
     }
 
     @Override
-    public Map<String, String> metadataAttributes(Path filePath) {
+    public Map<String, String> readMetadataAttributes(Path filePath) {
         return Collections.emptyMap();
     }
 
     @Override
-    public void metadataAttributes(Path filePath, Map<String, String> metadata) {
+    public void writeMetadataAttributes(Path filePath, Map<String, String> metadata) {
+        // do nothing
     }
 
     @Override
-    public void userDefinedAttributes(Path targetPath,
-                                      Map<String, String> userDefinedAttributes) {
+    public void writeUserDefinedAttributes(Path targetPath, Map<String, String> userDefinedAttributes) {
+        // do nothing
     }
 
     @Override
-    public Map<String, String> userDefinedAttributes(Path targetPath) {
+    public Map<String, String> readUserDefinedAttributes(Path targetPath) {
         return Collections.emptyMap();
     }
 
