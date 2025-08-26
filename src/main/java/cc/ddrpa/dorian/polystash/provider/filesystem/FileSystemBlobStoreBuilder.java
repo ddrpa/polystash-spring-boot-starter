@@ -40,7 +40,7 @@ public class FileSystemBlobStoreBuilder implements BlobStoreBuilder {
      * <p>
      * 在配置文件中使用此常量来指定使用文件系统存储后端。
      */
-    public static final String TYPE = "filesystem";
+    public static final String TYPE = "fs";
 
     private String blobStoreName;
     private FileSystemBlobStoreProperties properties;

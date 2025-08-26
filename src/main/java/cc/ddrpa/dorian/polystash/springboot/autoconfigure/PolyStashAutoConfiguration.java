@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.util.StringUtils;
 
 import java.util.Map;
@@ -42,6 +43,12 @@ public class PolyStashAutoConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(PolyStashAutoConfiguration.class);
 
+    private final GenericApplicationContext applicationContext;
+
+    public PolyStashAutoConfiguration(GenericApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
+    }
+
     /**
      * 创建并配置 BlobStoreHolder Bean，管理所有 BlobStore 实例。
      * <p>
@@ -61,13 +68,13 @@ public class PolyStashAutoConfiguration {
      * @return 配置完成的 BlobStoreHolder 实例
      */
     @Bean
-    public BlobStoreHolder blobStoreProvider(PolyStashProperties properties) {
+    public BlobStoreHolder blobStoreHolder(PolyStashProperties properties) {
         logger.info("开始初始化 PolyStash BlobStore 配置");
-        BlobStoreHolder provider = new BlobStoreHolder();
+        BlobStoreHolder holder = new BlobStoreHolder();
         // 注册内置的 BlobStoreBuilder
-        provider.registerBlobStoreBuilder("s3", S3BlobStoreBuilder.class);
+        holder.registerBlobStoreBuilder(S3BlobStoreBuilder.TYPE, S3BlobStoreBuilder.class);
         logger.info("已注册内置 BlobStoreBuilder: S3BlobStoreBuilder.class: s3");
-        provider.registerBlobStoreBuilder("filesystem", FileSystemBlobStoreBuilder.class);
+        holder.registerBlobStoreBuilder(FileSystemBlobStoreBuilder.TYPE, FileSystemBlobStoreBuilder.class);
         logger.info("已注册内置 BlobStoreBuilder: FileSystemBlobStoreBuilder.class: filesystem");
 
         SortedMap<String, FullBlobStoreProperties> blobstoreConfigs = properties.getBlobstore();
@@ -76,7 +83,7 @@ public class PolyStashAutoConfiguration {
             blobstoreConfigs.put("default", new FullBlobStoreProperties().setBuilder("filesystem").setBaseDir("blobstore"));
         }
         String primaryBlobStoreQualifier = properties.getPrimary();
-        if (!blobstoreConfigs.containsKey(primaryBlobStoreQualifier)) {
+        if (!StringUtils.hasText(primaryBlobStoreQualifier) || !blobstoreConfigs.containsKey(primaryBlobStoreQualifier)) {
             primaryBlobStoreQualifier = blobstoreConfigs.firstKey();
         }
         logger.info("使用的主 BlobStore 配置: {}", primaryBlobStoreQualifier);
@@ -86,7 +93,7 @@ public class PolyStashAutoConfiguration {
             String blobStoreQualifier = entry.getKey();
             FullBlobStoreProperties blobStoreProperties = entry.getValue();
             try {
-                processBlobStoreConfiguration(provider, blobStoreQualifier, blobStoreProperties, primaryBlobStoreQualifier.equalsIgnoreCase(blobStoreQualifier));
+                processBlobStoreConfiguration(holder, blobStoreQualifier, blobStoreProperties, primaryBlobStoreQualifier.equalsIgnoreCase(blobStoreQualifier));
             } catch (Exception e) {
                 logger.error("处理 BlobStore 配置 '{}' 时发生错误: {}", blobStoreQualifier, e.getMessage(), e);
                 throw new RuntimeException(
@@ -95,7 +102,23 @@ public class PolyStashAutoConfiguration {
         }
 
         logger.info("PolyStash BlobStore 配置初始化完成，共配置 {} 个 BlobStore", blobstoreConfigs.size());
-        return provider;
+
+        // 如果启用 Bean 注册，则将 BlobStore 注册为 Spring Bean
+        if (properties.getBeanRegistration()) {
+            holder.getBlobStores().forEach((triple -> {
+                String qualifier = triple.getLeft();
+                BlobStore blobStore = triple.getMiddle();
+                boolean isPrimary = triple.getRight();
+                if (isPrimary) {
+                    applicationContext.registerBean(qualifier, BlobStore.class, () -> blobStore, bd -> bd.setPrimary(true));
+                } else {
+                    applicationContext.registerBean(qualifier, BlobStore.class, () -> blobStore);
+                }
+                logger.atInfo().log("Register bean definition for {}.", qualifier);
+            }));
+        }
+
+        return holder;
     }
 
     /**
@@ -110,13 +133,13 @@ public class PolyStashAutoConfiguration {
      *   <li>注册到 BlobStoreHolder</li>
      * </ul>
      *
-     * @param provider            BlobStore 持有者，用于注册 BlobStore 实例
+     * @param holder              BlobStore 持有者，用于注册 BlobStore 实例
      * @param blobStoreQualifier  BlobStore 的限定符标识符
      * @param blobStoreProperties BlobStore 的配置属性
      * @param isPrimary           是否为主存储实例
      * @throws GeneralPolyStashException 当配置处理失败时抛出
      */
-    private void processBlobStoreConfiguration(BlobStoreHolder provider,
+    private void processBlobStoreConfiguration(BlobStoreHolder holder,
                                                String blobStoreQualifier,
                                                FullBlobStoreProperties blobStoreProperties,
                                                boolean isPrimary) throws GeneralPolyStashException {
@@ -127,7 +150,7 @@ public class PolyStashAutoConfiguration {
             throw new IllegalArgumentException(
                     String.format("BlobStore '%s' 缺少必需的 'builder' 配置", blobStoreQualifier));
         }
-        BlobStoreBuilder blobStoreBuilder = createBlobStoreBuilder(builderType, provider);
+        BlobStoreBuilder blobStoreBuilder = createBlobStoreBuilder(builderType, holder);
         // 验证必需字段
         blobStoreBuilder.validate(blobStoreProperties);
 
@@ -137,7 +160,7 @@ public class PolyStashAutoConfiguration {
                 .properties(blobStoreProperties)
                 .build();
         // 注册
-        provider.registerBlobStore(blobStore, isPrimary);
+        holder.registerBlobStore(blobStore, isPrimary);
     }
 
     /**
@@ -146,13 +169,13 @@ public class PolyStashAutoConfiguration {
      * 首先尝试从已注册的构建器中获取，如果不存在则尝试通过反射创建。
      * 支持内置的构建器类型和用户自定义的构建器实现。
      *
-     * @param builder  构建器类型标识符
-     * @param provider BlobStore 持有者，包含已注册的构建器
+     * @param builder 构建器类型标识符
+     * @param holder  BlobStore 持有者，包含已注册的构建器
      * @return 对应的 BlobStoreBuilder 实例
      */
-    private BlobStoreBuilder createBlobStoreBuilder(String builder, BlobStoreHolder provider) {
+    private BlobStoreBuilder createBlobStoreBuilder(String builder, BlobStoreHolder holder) {
         // 首先尝试从已注册的构建器中获取
-        BlobStoreBuilder blobStoreBuilder = provider.getBlobStoreBuilder(builder);
+        BlobStoreBuilder blobStoreBuilder = holder.getBlobStoreBuilder(builder);
         if (blobStoreBuilder != null) {
             return blobStoreBuilder;
         }
@@ -162,7 +185,7 @@ public class PolyStashAutoConfiguration {
             if (BlobStoreBuilder.class.isAssignableFrom(builderClass)) {
                 @SuppressWarnings("unchecked")
                 Class<? extends BlobStoreBuilder> typedClass = (Class<? extends BlobStoreBuilder>) builderClass;
-                provider.registerBlobStoreBuilder(typedClass);
+                holder.registerBlobStoreBuilder(typedClass);
                 return typedClass.getDeclaredConstructor().newInstance();
             } else {
                 throw new IllegalArgumentException(

@@ -2,9 +2,12 @@ package cc.ddrpa.dorian.polystash.springboot.autoconfigure;
 
 import cc.ddrpa.dorian.polystash.core.blobstore.BlobStore;
 import cc.ddrpa.dorian.polystash.core.blobstore.BlobStoreBuilder;
+import org.apache.commons.lang3.tuple.Triple;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -170,5 +173,18 @@ public class BlobStoreHolder {
      */
     public BlobStore getBlobStore(String blobStoreName) {
         return blobStoreMap.getOrDefault(blobStoreName, primaryBlobStore);
+    }
+
+    /**
+     * 获取 BlobStore 实例清单
+     */
+    protected List<Triple<String, BlobStore, Boolean>> getBlobStores() {
+        if (blobStoreMap.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return blobStoreMap.entrySet().stream()
+                .map(entry -> Triple.of(entry.getKey(), entry.getValue(),
+                        entry.getValue() == primaryBlobStore))
+                .toList();
     }
 }

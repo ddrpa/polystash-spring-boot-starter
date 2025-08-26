@@ -18,9 +18,11 @@ public class PolyStashProperties {
     /**
      * 指定默认 BlobStore
      * <p>
-     * 如果配置，将使用第一个配置的 BlobStore 作为主实例
+     * 如果未配置，将使用读取到的第一个配置的 BlobStore 作为主实例
      */
     private String primary;
+
+    private Boolean beanRegistration = true;
 
     /**
      * BlobStore 配置映射
@@ -35,6 +37,15 @@ public class PolyStashProperties {
 
     public void setPrimary(String primary) {
         this.primary = primary;
+    }
+
+    public Boolean getBeanRegistration() {
+        return beanRegistration;
+    }
+
+    public PolyStashProperties setBeanRegistration(Boolean beanRegistration) {
+        this.beanRegistration = beanRegistration;
+        return this;
     }
 
     public SortedMap<String, FullBlobStoreProperties> getBlobstore() {

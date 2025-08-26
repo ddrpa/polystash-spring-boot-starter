@@ -37,8 +37,8 @@ polystash:
   primary: avatar
   blobstore:
     avatar:
-      builder: filesystem
-      baseDir: /var/lib/blob-storage
+      builder: fs
+      baseDir: /var/www/public/avatar
     attachments:
       builder: s3
       endpoint: https://minio.example.com:9000
