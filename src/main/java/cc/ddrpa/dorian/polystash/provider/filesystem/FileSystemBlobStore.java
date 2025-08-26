@@ -271,7 +271,7 @@ public class FileSystemBlobStore extends BlobStore {
         File file = filePath.toFile();
         Blob blob = new Blob()
                 .setRepeatable(true)
-                .setLastModified(Instant.ofEpochSecond(file.lastModified()))
+                .setLastModified(Instant.ofEpochMilli(file.lastModified()))
                 .setLength(file.length())
                 .setETag(IAttributeHandler.parseETag(metadata).orElse(null))
                 .setReadableName(IAttributeHandler.parseReadableFilename(metadata).orElse(null))
