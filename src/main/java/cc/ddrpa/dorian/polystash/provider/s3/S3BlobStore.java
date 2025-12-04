@@ -117,6 +117,11 @@ public class S3BlobStore extends BlobStore {
     @Override
     public Blob put(String prefix, String readableName, Payload<?> payload, Map<String, String> userDefinedAttributes, String contentType) throws GeneralPolyStashException {
         String objectName = generateObjectName(prefix);
+        return putOrReplace(objectName, readableName, payload, userDefinedAttributes, contentType);
+    }
+
+    @Override
+    public Blob putOrReplace(String objectName, String readableName, Payload<?> payload, Map<String, String> userDefinedAttributes, String contentType) throws GeneralPolyStashException {
         var argsBuilder = PutObjectArgs.builder();
         if (userDefinedAttributes != null && !userDefinedAttributes.isEmpty()) {
             argsBuilder.userMetadata(userDefinedAttributes);
@@ -130,7 +135,7 @@ public class S3BlobStore extends BlobStore {
             minioClient.putObject(argsBuilder.build());
         } catch (Exception e) {
             throw new IOErrorOccursException(
-                    String.format("Failed to put object '%s' to bucket '%s' with prefix '%s'", objectName, bucket, prefix), e);
+                    String.format("Failed to put object '%s' to bucket '%s'", objectName, bucket), e);
         }
         return stat(objectName);
     }

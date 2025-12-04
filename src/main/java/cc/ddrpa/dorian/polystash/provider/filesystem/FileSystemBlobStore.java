@@ -75,6 +75,44 @@ public class FileSystemBlobStore extends BlobStore {
     }
 
     /**
+     * 解构对象名称
+     *
+     * @param objectName 应当可以指向磁盘上的具体文件
+     * @return
+     * @throws AccessDeniedException
+     * @throws IOErrorOccursException
+     */
+    protected Pair<Path, String> deconstructObjectName(String objectName) throws AccessDeniedException, IOErrorOccursException {
+        // 指向磁盘上某个路径
+        Path targetFilePath = this.baseDir.resolve(objectName).normalize();
+        // 确保这个路径没有越过 baseDir
+        if (!targetFilePath.startsWith(this.baseDir)) {
+            throw new AccessDeniedException(
+                    String.format("Access denied: object '%s' is outside of base directory '%s'", targetFilePath, this.baseDir));
+        }
+        if (Files.notExists(targetFilePath)) {
+            // 确保这个路径的父级目录存在
+            if (Files.notExists(targetFilePath.getParent())) {
+                try {
+                    Files.createDirectories(targetFilePath.getParent());
+                } catch (IOException e) {
+                    throw new IOErrorOccursException(
+                            String.format("Failed to create parent directories for object '%s' at path '%s'", objectName, targetFilePath), e);
+                }
+            } else if (!Files.isDirectory(targetFilePath.getParent())) {
+                throw new IOErrorOccursException(
+                        String.format("Parent path '%s' exists but is not a directory. Expected directory for object '%s'", targetFilePath.getParent(), objectName));
+            } else if (!Files.isRegularFile(targetFilePath)) {
+                throw new IOErrorOccursException(
+                        String.format("Target path '%s' exists but is not a regular file. Expected file for object '%s'", targetFilePath, objectName));
+            }
+        }
+        Path relativePath = Path.of(objectName);
+        // 统一使用 /
+        return Pair.of(targetFilePath, relativePath.toString().replace("\\", "/"));
+    }
+
+    /**
      * 检查目标路径
      *
      * @param objectName
@@ -173,11 +211,22 @@ public class FileSystemBlobStore extends BlobStore {
 
     @Override
     public Blob put(String prefix, String readableName, Payload<?> payload, Map<String, String> userDefinedAttributes, String contentType) throws GeneralPolyStashException {
-        long contentLength = 0;
-        byte[] digest;
         Pair<Path, String> pair = generateObjectName(prefix);
         Path targetFilePath = pair.getLeft();
         String objectName = pair.getRight();
+        return save(targetFilePath, objectName, readableName, payload, userDefinedAttributes, contentType);
+    }
+
+    @Override
+    public Blob putOrReplace(String objectName, String readableName, Payload<?> payload, Map<String, String> userDefinedAttributes, String contentType) throws GeneralPolyStashException {
+        Pair<Path, String> pair = deconstructObjectName(objectName);
+        Path targetFilePath = pair.getLeft();
+        return save(targetFilePath, objectName, readableName, payload, userDefinedAttributes, contentType);
+    }
+
+    protected Blob save(Path targetFilePath, String objectName, String readableName, Payload<?> payload, Map<String, String> userDefinedAttributes, String contentType) throws GeneralPolyStashException {
+        long contentLength;
+        byte[] digest;
         Blob blob = new Blob()
                 .setObjectName(objectName)
                 .setLastModified(Instant.now())

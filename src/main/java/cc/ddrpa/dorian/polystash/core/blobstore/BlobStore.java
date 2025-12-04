@@ -118,6 +118,23 @@ public abstract class BlobStore {
             throws GeneralPolyStashException;
 
     /**
+     * 将数据存储到指定的前缀路径下。
+     * <p>
+     * 将提供的数据内容存储到存储系统中，支持自定义元数据和内容类型。
+     * 如果指定前缀的目录不存在，将自动创建。
+     *
+     * @param objectName            对象名称，如果存在则覆盖
+     * @param readableName          人类可读的文件名
+     * @param payload               要存储的数据内容
+     * @param userDefinedAttributes 用户自定义的属性键值对
+     * @param contentType           内容的 MIME 类型
+     * @return 存储成功后的 Blob 对象，包含存储后的元数据
+     * @throws GeneralPolyStashException 当存储操作失败时抛出
+     */
+    public abstract Blob putOrReplace(String objectName, String readableName, Payload<?> payload, Map<String, String> userDefinedAttributes, String contentType)
+            throws GeneralPolyStashException;
+
+    /**
      * 删除指定名称的 Blob 对象。
      * <p>
      * 从存储系统中永久删除指定的对象。如果 silent 为 true，
