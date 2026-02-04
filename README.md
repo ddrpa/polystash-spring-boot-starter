@@ -10,6 +10,34 @@ PolyStash 解决以下场景的需求：
 - **多存储管理**：不同业务模块的文件存储到不同位置（如用户头像存本地、附件存 S3）
 - **统一接口**：屏蔽底层存储差异，提供一致的 API
 
+## 部署和迁移的注意事项
+
+Polystash 默认使用文件扩展属性（简称 `xattr`，由 `java.nio.file.attribute.UserDefinedFileAttributeView` 实现支持）存储文件的类型、原始文件名等信息，该功能需要底层操作系统、文件系统类型以及挂载选项的配合。
+
+> 表格由 Google Gemini AI 生成，仅供参考，具体以官方文档为准
+
+|操作系统   |常见文件系统            |是否支持 UserDefinedFileAttributeView|实现机制                                                          |
+|-------|------------------|---------------------------------|--------------------------------------------------------------|
+|Windows|NTFS              |支持                               |使用 ADS (Alternate Data Streams) 实现                           |
+|       |FAT32 / exFAT     |不支持                              |文件系统本身不支持扩展属性                                                |
+|Linux  |ext4 / XFS / Btrfs|支持                               |使用内核提供的 xattr。需要挂载时开启 user_xattr（现代内核通常默认开启）                 |
+|       |NFS               |部分支持                             |取决于具体版本（如 NFSv4）和服务器配置                                       |
+|macOS  |APFS / HFS+       |JDK 17+ 支持                       |对应 macOS 的 com.apple.* 扩展属性。旧版 JDK（如 Java 8/11）在此平台上可能返回 null|
+
+如果在不同的环境中进行数据迁移，或传输协议 / 工具未支持此功能，则有较大概率丢失数据。对此有两个推荐的解决方案：
+
+1. 使用 `tar --xattrs` 参数
+
+```sh
+tar --xattrs -cvf archive.tar your_file
+```
+
+解压时同样使用 `--xattrs` 参数。
+
+2. 元数据 Sidecar
+
+实现 `cc.ddrpa.dorian.polystash.utils.filesystem.IAttributeHandler` 接口，自定义元数据的存储和读取逻辑，例如使用同名的 `.json` 或 `.meta` 文件存储属性。
+
 ## 核心概念
 
 ### 架构概览
